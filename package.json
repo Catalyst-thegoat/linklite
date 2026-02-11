@@ -1,8 +1,12 @@
 {
-  "name": "url-shortener",
+  "name": "linklite",
   "version": "1.0.0",
+  "description": "Simple URL shortener - create short, memorable links in seconds",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
   }
 }

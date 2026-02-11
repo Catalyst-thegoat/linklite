@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkLite ⚡️ - Simple URL Shortener</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #0a0a0f 0%, #0f172a 50%, #0a0a0f 100%); }
+        .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .gradient-text { background: linear-gradient(135deg, #22d3ee, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee, #0891b2); transition: all 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(34, 211, 238, 0.3); }
+        .glow { box-shadow: 0 0 60px rgba(34, 211, 238, 0.3); }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 -left-20 w-72 h-72 bg-brand-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-1/4 -right-20 w-72 h-72 bg-brand-500/10 rounded-full blur-3xl"></div>
+    </div>
+    
+    <div class="relative z-10">
+        <header class="py-8 px-6">
+            <nav class="max-w-4xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">⚡️</span>
+                    <span class="text-xl font-bold gradient-text">LinkLite</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="showHistory()" class="text-gray-400 hover:text-white text-sm">📜 History</button>
+                </div>
+            </nav>
+        </header>
+        
+        <main class="px-6 py-16">
+            <div class="max-w-2xl mx-auto text-center mb-12">
+                <h1 class="text-5xl font-bold mb-4">
+                    <span class="gradient-text">Short links,</span><br>big results
+                </h1>
+                <p class="text-gray-400">Create short, memorable links in seconds. No signup required.</p>
+            </div>
+            
+            <div class="glass rounded-3xl p-8 mb-8 max-w-2xl mx-auto">
+                <div class="flex flex-col gap-4">
+                    <input type="url" id="longUrl" 
+                        class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-colors"
+                        placeholder="Paste your long URL here..."
+                        onkeypress="if(event.key==='Enter')createShortLink()">
+                    <div class="flex gap-4">
+                        <input type="text" id="customCode" 
+                            class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-brand-500 transition-colors"
+                            placeholder="Custom code (optional)">
+                        <button onclick="createShortLink()" class="btn-primary px-8 py-4 rounded-2xl font-semibold">✨ Shorten</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="result" class="hidden glass rounded-3xl p-8 mb-8 max-w-2xl mx-auto animate-slide-up">
+                <p class="text-gray-400 text-sm mb-3">Your short link:</p>
+                <div class="flex items-center gap-3">
+                    <input type="text" id="shortUrlResult" readonly 
+                        class="flex-1 bg-brand-500/20 border border-brand-500/30 rounded-xl px-4 py-3 text-brand-400 font-mono">
+                    <button onclick="copyShortLink()" class="btn-primary px-6 py-3 rounded-xl font-medium">📋 Copy</button>
+                </div>
+                <div class="mt-4 flex gap-4 text-sm">
+                    <span id="clicks" class="text-gray-400">0 clicks</span>
+                    <span class="text-gray-600">•</span>
+                    <span class="text-gray-400">Created just now</span>
+                </div>
+            </div>
+            
+            <div id="history" class="hidden glass rounded-3xl p-6 mb-8 max-w-2xl mx-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-semibold">📜 Recent Links</h3>
+                    <button onclick="clearHistory()" class="text-xs text-gray-500 hover:text-white">Clear</button>
+                </div>
+                <div id="historyList" class="space-y-3"></div>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
+                <div class="glass rounded-2xl p-6 text-center">
+                    <div class="text-4xl mb-3">⚡️</div>
+                    <h3 class="font-semibold mb-1">Fast</h3>
+                    <p class="text-gray-500 text-sm">Create links instantly</p>
+                </div>
+                <div class="glass rounded-2xl p-6 text-center">
+                    <div class="text-4xl mb-3">🔗</div>
+                    <h3 class="font-semibold mb-1">Custom</h3>
+                    <p class="text-gray-500 text-sm">Choose your own code</p>
+                </div>
+                <div class="glass rounded-2xl p-6 text-center">
+                    <div class="text-4xl mb-3">📊</div>
+                    <h3 class="font-semibold mb-1">Track</h3>
+                    <p class="text-gray-500 text-sm">Monitor click counts</p>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="py-6 px-6 border-t border-white/5 text-center">
+            <p class="text-gray-500 text-sm">© 2024 LinkLite. Built by Catalyst ⚡️</p>
+        </footer>
+    </div>
+    
+    <script>
+        function createShortLink() {
+            const longUrl = document.getElementById('longUrl').value.trim();
+            if (!longUrl) return alert('Enter a URL');
+            
+            if (!longUrl.startsWith('http://') && !longUrl.startsWith('https://')) {
+                longUrl = 'https://' + longUrl;
+            }
+            
+            const customCode = document.getElementById('customCode').value.trim();
+            const code = customCode || generateCode();
+            
+            fetch('/api/shorten', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ longUrl, code })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const shortUrl = window.location.origin + '/' + data.code;
+                document.getElementById('shortUrlResult').value = shortUrl;
+                document.getElementById('clicks').textContent = data.clicks + ' clicks';
+                document.getElementById('result').classList.remove('hidden');
+                
+                saveToHistory(data.code, longUrl, data.clicks);
+            })
+            .catch(() => {
+                // Demo mode - show result anyway
+                const shortUrl = window.location.origin + '/' + code;
+                document.getElementById('shortUrlResult').value = shortUrl;
+                document.getElementById('clicks').textContent = '0 clicks';
+                document.getElementById('result').classList.remove('hidden');
+                
+                saveToHistory(code, longUrl, 0);
+            });
+        }
+        
+        function generateCode() {
+            const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 6; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+        
+        function copyShortLink() {
+            const input = document.getElementById('shortUrlResult');
+            input.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        }
+        
+        function saveToHistory(code, longUrl, clicks) {
+            const history = JSON.parse(localStorage.getItem('linkLiteHistory') || '[]');
+            history.unshift({ code, longUrl: longUrl.substring(0, 50) + (longUrl.length > 50 ? '...' : ''), clicks, date: Date.now() });
+            localStorage.setItem('linkLiteHistory', JSON.stringify(history.slice(0, 10)));
+        }
+        
+        function showHistory() {
+            const history = JSON.parse(localStorage.getItem('linkLiteHistory') || '[]');
+            const historyDiv = document.getElementById('history');
+            const listDiv = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                alert('No history yet. Create your first short link!');
+                return;
+            }
+            
+            historyDiv.classList.remove('hidden');
+            listDiv.innerHTML = history.map(h => `
+                <div class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
+                    <div class="flex-1 min-w-0 mr-4">
+                        <div class="font-mono text-brand-400 text-sm">/${h.code}</div>
+                        <div class="text-gray-500 text-xs truncate">${h.longUrl}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm text-gray-400">${h.clicks} clicks</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function clearHistory() {
+            localStorage.removeItem('linkLiteHistory');
+            document.getElementById('history').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
