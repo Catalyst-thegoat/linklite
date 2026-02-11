@@ -79,12 +79,29 @@
             
             <div id="result" class="hidden glass rounded-3xl p-8 mb-8 max-w-2xl mx-auto animate-slide-up">
                 <p class="text-gray-400 text-sm mb-3">Your short link:</p>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 mb-4">
                     <input type="text" id="shortUrlResult" readonly 
                         class="flex-1 bg-brand-500/20 border border-brand-500/30 rounded-xl px-4 py-3 text-brand-400 font-mono">
                     <button onclick="copyShortLink()" class="btn-primary px-6 py-3 rounded-xl font-medium">📋 Copy</button>
                 </div>
-                <div class="mt-4 flex gap-4 text-sm">
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <button onclick="shareViaEmail()" class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl px-4 py-3 transition">
+                        <span>📧</span>
+                        <span class="text-sm">Share via Email</span>
+                    </button>
+                    <button onclick="showQRCode()" class="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 rounded-xl px-4 py-3 transition">
+                        <span>▣</span>
+                        <span class="text-sm">Show QR Code</span>
+                    </button>
+                </div>
+                
+                <div id="qrCodeContainer" class="hidden text-center mb-4">
+                    <img id="qrCodeImage" class="w-32 h-32 mx-auto rounded-xl" alt="QR Code">
+                    <p class="text-xs text-gray-500 mt-2">Scan to open link</p>
+                </div>
+                
+                <div class="flex gap-4 text-sm">
                     <span id="clicks" class="text-gray-400">0 clicks</span>
                     <span class="text-gray-600">•</span>
                     <span class="text-gray-400">Created just now</span>
@@ -173,12 +190,30 @@
             const input = document.getElementById('shortUrlResult');
             input.select();
             document.execCommand('copy');
-            alert('Copied to clipboard!');
+            
+            const btn = document.querySelector('#result .btn-primary');
+            const original = btn.innerHTML;
+            btn.innerHTML = '✓ Copied!';
+            setTimeout(() => btn.innerHTML = original, 2000);
+        }
+        
+        function shareViaEmail() {
+            const url = document.getElementById('shortUrlResult').value;
+            window.location.href = 'mailto:?subject=Check out this link&body=' + encodeURIComponent(url);
+        }
+        
+        function showQRCode() {
+            const url = document.getElementById('shortUrlResult').value;
+            const qrContainer = document.getElementById('qrCodeContainer');
+            const qrImage = document.getElementById('qrCodeImage');
+            
+            qrImage.src = 'https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=' + encodeURIComponent(url);
+            qrContainer.classList.remove('hidden');
         }
         
         function saveToHistory(code, longUrl, clicks) {
             const history = JSON.parse(localStorage.getItem('linkLiteHistory') || '[]');
-            history.unshift({ code, longUrl: longUrl.substring(0, 50) + (longUrl.length > 50 ? '...' : ''), clicks, date: Date.now() });
+            history.unshift({ code, longUrl, clicks, date: Date.now() });
             localStorage.setItem('linkLiteHistory', JSON.stringify(history.slice(0, 10)));
         }
         
@@ -193,17 +228,40 @@
             }
             
             historyDiv.classList.remove('hidden');
-            listDiv.innerHTML = history.map(h => `
+            listDiv.innerHTML = history.map((h, i) => `
                 <div class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
                     <div class="flex-1 min-w-0 mr-4">
-                        <div class="font-mono text-brand-400 text-sm">/${h.code}</div>
+                        <div class="font-mono text-brand-400 text-sm cursor-pointer hover:text-brand-300" onclick="restoreLink(${i})">/${h.code}</div>
                         <div class="text-gray-500 text-xs truncate">${h.longUrl}</div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-sm text-gray-400">${h.clicks} clicks</div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <div class="text-sm text-gray-400">${h.clicks} clicks</div>
+                            <div class="text-xs text-gray-600">${formatDate(h.date)}</div>
+                        </div>
                     </div>
                 </div>
             `).join('');
+        }
+        
+        function restoreLink(index) {
+            const history = JSON.parse(localStorage.getItem('linkLiteHistory') || '[]');
+            const item = history[index];
+            if (item) {
+                document.getElementById('longUrl').value = item.longUrl;
+                document.getElementById('result').classList.add('hidden');
+            }
+        }
+        
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'just now';
+            if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+            return date.toLocaleDateString();
         }
         
         function clearHistory() {
